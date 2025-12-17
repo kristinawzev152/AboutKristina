@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>macOS 26 - Black & White Edition</title>
+    
+    <!-- Шрифты (Apple-style) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Иконки FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            /* Переменные стиля macOS 26 */
+            --glass-bg: rgba(255, 255, 255, 0.15); /* Прозрачное стекло */
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --blur: 40px;
+            --radius: 35px;
+            
+            /* ЦВЕТА ИКОНОК И ТЕКСТА */
+            --icon-color: #000000; /* ЧЕРНЫЕ ИКОНКИ (как в iOS 18) */
+            --text-color: #ffffff; /* БЕЛЫЙ ТЕКСТ */
+            --text-glow: 0 1px 3px rgba(0,0,0,0.8), 0 0 15px rgba(0,0,0,0.5); /* Тень чтобы белый текст читался */
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            
+            /* ФОН - ФАЙЛ wallpaper.jpg */
+            background-image: url('wallpaper.jpg');
+            background-position: center;
+            background-size: cover;
+            background-color: #444; /* Если картинки нет, будет темно-серый */
+            color: var(--text-color);
+            user-select: none;
+        }
+
+        /* --- КРАШ ТЕРМИНАЛА --- */
+        #blackout {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 999999;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-family: monospace;
+        }
+
+        /* --- OKNA (WINDOWS) --- */
+        .window {
+            position: absolute;
+            width: 380px;
+            /* Матовое стекло */
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--blur));
+            -webkit-backdrop-filter: blur(var(--blur));
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+            
+            display: none; /* Скрыты по умолчанию */
+            flex-direction: column;
+            z-index: 10;
+            top: 20%;
+            left: 30%;
+            
+            /* Анимация */
+            transition: opacity 0.2s, transform 0.2s;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .win-header {
+            height: 50px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            cursor: move; /* Рука для ПК */
+        }
+
+        /* Кнопки управления (тоже темные под стиль) */
+        .traffic-lights { display: flex; gap: 8px; }
+        .traffic-btn { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.2); }
+        .close { background: #FF5F56; cursor: pointer; }
+        .close:hover { filter: brightness(0.8); }
+        .min { background: #FFBD2E; }
+        .max { background: #27C93F; }
+
+        .win-title {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            left: 0;
+            pointer-events: none;
+            font-weight: 600;
+            text-shadow: var(--text-glow);
+        }
+
+        .win-content {
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        /* Стили текста и иконки внутри окон */
+        .app-big-icon {
+            font-size: 50px;
+            color: var(--icon-color); /* Черные иконки */
+            margin-bottom: 15px;
+            filter: drop-shadow(0 2px 10px rgba(255,255,255,0.3)); /* Свечение под черной иконкой */
+        }
+
+        h2, h3, p, div {
+            text-shadow: var(--text-glow); /* Чтобы белый текст был виден на стекле */
+        }
+
+        .data-box {
+            background: rgba(0, 0, 0, 0.6); /* Темная подложка под белый текст */
+            color: white;
+            padding: 10px 15px;
+            border-radius: 12px;
+            font-family: monospace;
+            margin: 10px 0;
+            user-select: text;
+            border: 1px solid rgba(255,255,255,0.3);
+            text-shadow: none;
+        }
+
+        .btn {
+            background: #fff;
+            color: #000;
+            padding: 10px 25px;
+            border-radius: 100px;
+            text-decoration: none;
+            font-weight: 700;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transition: 0.2s;
+            text-shadow: none; /* У кнопки убираем тень текста */
+        }
+        .btn:hover { transform: scale(1.05); }
+
+        /* Терминал Специфика */
+        #win-term {
+            background: rgba(20, 20, 20, 0.95);
+            border: 1px solid #555;
+        }
+        #win-term .app-big-icon { color: white; } /* В черном терминале иконка белая */
+        #win-term h2, #win-term p { text-shadow: none; }
+        
+        /* --- DOCK PANEL --- */
+        .dock-container {
+            position: fixed;
+            bottom: 25px;
+            left: 0; width: 100%;
+            display: flex;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .dock {
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.3); /* Светлое стекло дока */
+            backdrop-filter: blur(var(--blur));
+            -webkit-backdrop-filter: blur(var(--blur));
+            border: 1px solid rgba(255,255,255,0.5);
+            padding: 12px 16px;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+        }
+
+        .icon {
+            width: 60px;
+            height: 60px;
+            /* Квадрат iOS */
+            border-radius: 16px; 
+            /* Белый фон для иконки чтобы черная иконка читалась */
+            background: rgba(255, 255, 255, 0.7); 
+            border: 1px solid rgba(255,255,255,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            color: var(--icon-color); /* Черный цвет */
+            font-size: 30px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        /* Hover Effect Desktop */
+        .icon:hover {
+            transform: translateY(-15px) scale(1.2);
+            margin: 0 10px;
+            z-index: 100;
+            background: #fff;
+        }
+        
+        .icon:active { transform: scale(0.9); }
+
+        .icon.active::after {
+            content: ''; position: absolute; bottom: -8px; width: 5px; height: 5px; 
+            background: black; border-radius: 50%;
+        }
+
+        .divider {
+            width: 1px; height: 40px; background: rgba(0,0,0,0.2);
+        }
+
+        /* Индивидуальные настройки для чистоты */
+        .ico-term { background: #111; color: #fff; } /* Терминал черный для контраста */
+        .ico-coffee { background: transparent; border: none; font-size: 40px; box-shadow: none;}
+        .ico-coffee:hover { background: transparent; transform: rotate(20deg) scale(1.1); }
+
+        /* --- MOBILE iOS 26 ADAPT --- */
+        @media (max-width: 768px) {
+            .window {
+                width: 90% !important;
+                left: 50% !important;
+                top: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                /* Выключаем Drag&Drop */
+                margin: 0 !important;
+            }
+            .window.active-anim {
+                animation: mobileOpen 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            }
+            @keyframes mobileOpen {
+                from { opacity: 0; transform: translate(-50%, -45%) scale(0.95); }
+                to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            }
+
+            .win-header { pointer-events: none; justify-content: flex-end;} /* Нельзя таскать */
+            
+            .dock {
+                bottom: 15px;
+                padding: 10px 12px;
+                border-radius: 30px;
+                gap: 8px;
+            }
+            .icon { width: 48px; height: 48px; font-size: 22px; border-radius: 12px; }
+            .icon:hover { transform: none; margin: 0; background: rgba(255,255,255,0.7); } /* Убрана волна */
+            .ico-coffee { width: 50px; font-size: 30px; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- OVERLAY SHUTDOWN (TERMINAL CRASH) -->
+    <div id="blackout">
+        <i class="fas fa-power-off fa-4x" style="margin-bottom: 20px;"></i>
+        <h1>SYSTEM TERMINATED</h1>
+        <p>User inititated manual override.</p>
+        <br>
+        <button class="btn" onclick="location.reload()" style="background: white; color: black; border:none; cursor: pointer;">REBOOT SYSTEM</button>
+    </div>
+
+    <!-- WINDOW 1: FINDER INFO -->
+    <div class="window" id="win-finder">
+        <div class="win-header" onmousedown="startDrag(event, 'win-finder')">
+            <div class="traffic-lights"><div class="traffic-btn close" onclick="closeWindow('win-finder')"></div><div class="traffic-btn min"></div></div>
+            <div class="win-title">System Info</div>
+        </div>
+        <div class="win-content">
+            <div style="font-size: 50px; font-weight: 200; line-height: 1;" id="clock-time">12:00</div>
+            <div style="font-size: 18px; opacity: 0.9; margin-bottom: 20px;" id="clock-date">Searching date...</div>
+            <hr style="width:100%; border:0; border-bottom:1px solid rgba(255,255,255,0.3); margin-bottom:15px;">
+            <p><strong>Device Info:</strong></p>
+            <div style="font-size: 12px; opacity: 0.8; font-family:monospace; line-height: 1.4;" id="agent">...</div>
+        </div>
+    </div>
+
+    <!-- WINDOW 2: TERMINAL -->
+    <div class="window" id="win-term">
+        <div class="win-header" onmousedown="startDrag(event, 'win-term')" style="background: rgba(255,255,255,0.1);">
+            <div class="traffic-lights"><div class="traffic-btn close" onclick="closeWindow('win-term')"></div></div>
+            <div class="win-title">Terminal</div>
+        </div>
+        <div class="win-content" style="align-items: flex-start; text-align: left;">
+            <div style="font-family: monospace; cursor: pointer;" onclick="killSystem()">
+                root@ios26:~# status_check<br>
+                <span style="color:#0f0;">System Operational.</span><br>
+                root@ios26:~# <span style="color:red">shutdown -h now</span><br>
+                WARNING: Tap here to confirm shutdown.<br>
+                > <span style="animation: blink 1s infinite;">_</span>
+            </div>
+            <style>@keyframes blink{50%{opacity:0;}}</style>
+        </div>
+    </div>
+
+    <!-- WINDOW 3: DISCORD -->
+    <div class="window" id="win-discord">
+        <div class="win-header" onmousedown="startDrag(event, 'win-discord')">
+            <div class="traffic-lights"><div class="traffic-btn close" onclick="closeWindow('win-discord')"></div><div class="traffic-btn min"></div></div>
+            <div class="win-title">Discord</div>
+        </div>
+        <div class="win-content">
+            <i class="fab fa-discord app-big-icon"></i>
+            <h2>My Discord</h2>
+            <div class="data-box">t1m0t11</div>
+            <p>Копируй логин и добавляй!</p>
+        </div>
+    </div>
+
+    <!-- WINDOW 4: TELEGRAM -->
+    <div class="window" id="win-telegram">
+        <div class="win-header" onmousedown="startDrag(event, 'win-telegram')">
+            <div class="traffic-lights"><div class="traffic-btn close" onclick="closeWindow('win-telegram')"></div><div class="traffic-btn min"></div></div>
+            <div class="win-title">Telegram</div>
+        </div>
+        <div class="win-content">
+            <i class="fab fa-telegram app-big-icon"></i>
+            <h2>My Telegram</h2>
+            <div class="data-box">@perevedena</div>
+            <a href="https://t.me/perevedena" target="_blank" class="btn">Открыть чат</a>
+        </div>
+    </div>
+
+    <!-- WINDOW 5: YOUTUBE -->
+    <div class="window" id="win-youtube">
+        <div class="win-header" onmousedown="startDrag(event, 'win-youtube')">
+            <div class="traffic-lights"><div class="traffic-btn close" onclick="closeWindow('win-youtube')"></div><div class="traffic-btn min"></div></div>
+            <div class="win-title">YouTube</div>
+        </div>
+        <div class="win-content">
+            <i class="fab fa-youtube app-big-icon"></i>
+            <h2>KristinaWzev152</h2>
+            <p>Видео и Shorts</p>
+            <a href="https://www.youtube.com/@kristinaWzev152" target="_blank" class="btn">Подписаться</a>
+        </div>
+    </div>
+
+    <!-- WINDOW 6: TWITCH -->
+    <div class="window" id="win-twitch">
+        <div class="win-header" onmousedown="startDrag(event, 'win-twitch')">
+            <div class="traffic-lights"><div class="traffic-btn close" onclick="closeWindow('win-twitch')"></div><div class="traffic-btn min"></div></div>
+            <div class="win-title">Twitch</div>
+        </div>
+        <div class="win-content">
+            <i class="fab fa-twitch app-big-icon"></i>
+            <h2>KristinaWzev152</h2>
+            <p>Прямые эфиры</p>
+            <a href="https://www.twitch.tv/kristinawzev152" target="_blank" class="btn">Смотреть Стрим</a>
+        </div>
+    </div>
+
+    <!-- DOCK BAR -->
+    <div class="dock-container">
+        <div class="dock">
+            <!-- 1. Finder -->
+            <div class="icon" onclick="toggleWin('win-finder', this)">
+                <i class="far fa-compass"></i>
+            </div>
+            <!-- 2. Terminal -->
+            <div class="icon ico-term" onclick="toggleWin('win-term', this)">
+                <i class="fas fa-terminal"></i>
+            </div>
+            
+            <div class="divider"></div>
+
+            <!-- Socials -->
+            <div class="icon" onclick="toggleWin('win-discord', this)">
+                <i class="fab fa-discord"></i>
+            </div>
+            <div class="icon" onclick="toggleWin('win-telegram', this)">
+                <i class="fab fa-telegram-plane"></i>
+            </div>
+            <div class="icon" onclick="toggleWin('win-youtube', this)">
+                <i class="fab fa-youtube"></i>
+            </div>
+            <div class="icon" onclick="toggleWin('win-twitch', this)">
+                <i class="fab fa-twitch"></i>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- COFFEE -->
+            <div class="icon ico-coffee" title="Relax">
+                <i class="fas fa-mug-hot" style="color: white; text-shadow: 0 0 10px gold;"></i>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Init logic
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('clock-time').textContent = now.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+            document.getElementById('clock-date').textContent = now.toLocaleDateString('ru-RU', {weekday:'long', month:'long', day:'numeric'});
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+        document.getElementById('agent').textContent = navigator.userAgent;
+
+        let maxIndex = 100;
+        let isMobile = window.innerWidth <= 768;
+
+        // Toggle Logic
+        function toggleWin(id, btn) {
+            const win = document.getElementById(id);
+            if(win.style.display === 'flex') {
+                closeWindow(id);
+            } else {
+                openWindow(id);
+                // Подсветка иконки
+                if(btn) btn.classList.add('active');
+            }
+        }
+
+        function openWindow(id) {
+            const win = document.getElementById(id);
+            win.style.display = 'flex';
+            win.style.zIndex = ++maxIndex;
+
+            // На мобилке свой стиль открытия (по центру)
+            if (isMobile) {
+                win.classList.add('active-anim');
+            } else {
+                // На ПК легкий рандом, если окно еще не трогали
+                if(!win.hasAttribute('data-moved')) {
+                    let rx = Math.floor(Math.random() * 40) - 20;
+                    let ry = Math.floor(Math.random() * 40) - 20;
+                    win.style.transform = `translate(${rx}px, ${ry}px)`;
+                }
+            }
+        }
+
+        function closeWindow(id) {
+            const win = document.getElementById(id);
+            win.style.display = 'none';
+            // Убрать подсветку в доке (примитивный способ)
+            // Здесь для простоты убираем у всех, при разработке полной ОС нужна привязка ID
+            const icons = document.querySelectorAll('.icon');
+            // Приблизительный маппинг по порядку
+            if(id==='win-finder') icons[0].classList.remove('active');
+            if(id==='win-term') icons[1].classList.remove('active');
+            if(id==='win-discord') icons[2].classList.remove('active');
+            if(id==='win-telegram') icons[3].classList.remove('active');
+            if(id==='win-youtube') icons[4].classList.remove('active');
+            if(id==='win-twitch') icons[5].classList.remove('active');
+        }
+
+        // Terminal Kill
+        function killSystem() {
+            document.getElementById('blackout').style.display = 'flex';
+        }
+
+        // DRAG AND DROP (Desktop Only)
+        let dragObj = null;
+        let diffX=0, diffY=0;
+
+        function startDrag(e, id) {
+            if(isMobile) return;
+            e.preventDefault();
+            dragObj = document.getElementById(id);
+            dragObj.style.zIndex = ++maxIndex;
+            dragObj.setAttribute('data-moved', '1');
+
+            const rect = dragObj.getBoundingClientRect();
+            diffX = e.clientX - rect.left;
+            diffY = e.clientY - rect.top;
+
+            // Переход в абсолютные координаты
+            dragObj.style.transform = 'none'; 
+            dragObj.style.left = rect.left + 'px';
+            dragObj.style.top = rect.top + 'px';
+
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        }
+
+        function onMove(e) {
+            if(!dragObj) return;
+            dragObj.style.left = (e.clientX - diffX) + 'px';
+            dragObj.style.top = (e.clientY - diffY) + 'px';
+        }
+
+        function onUp() {
+            dragObj = null;
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+        }
+
+        window.addEventListener('resize', () => { isMobile = window.innerWidth <= 768; });
+
+    </script>
+</body>
+</html>
